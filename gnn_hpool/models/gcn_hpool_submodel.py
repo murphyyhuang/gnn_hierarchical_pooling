@@ -112,5 +112,5 @@ class GcnHpoolSubmodel(Module):
   def apply_bn(self, x):
       ''' Batch normalization of 3D tensor x
       '''
-      bn_module = torch.nn.BatchNorm1d(x.size()[1])
-      return bn_module(x).to(self._device)
+      bn_module = torch.nn.BatchNorm1d(x.size()[1]).to(self._device)
+      return bn_module(x)

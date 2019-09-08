@@ -109,8 +109,8 @@ class GcnHpoolEncoder(Module):
   def apply_bn(self, x):
       ''' Batch normalization of 3D tensor x
       '''
-      bn_module = torch.nn.BatchNorm1d(x.size()[1])
-      return bn_module(x).to(self._device)
+      bn_module = torch.nn.BatchNorm1d(x.size()[1]).to(self._device)
+      return bn_module(x)
 
   def construct_mask(self, max_nodes, batch_num_nodes):
       ''' For each num_nodes in batch_num_nodes, the first num_nodes entries of the
