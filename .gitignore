@@ -105,3 +105,4 @@ venv.bak/
 
 # tmp results
 results/*
+.idea*
