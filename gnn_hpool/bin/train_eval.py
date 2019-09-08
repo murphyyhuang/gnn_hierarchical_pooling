@@ -35,7 +35,7 @@ def train_eval(hparams):
       logdir=os.path.join(hparams.model_save_path, str(hparams.timestamp) + '/val_{}'.format(val_idx))
     )
 
-    model = gcn_hpool_encoder.GcnHpoolEncoder(hparams)
+    model = gcn_hpool_encoder.GcnHpoolEncoder(hparams).to(torch.device(hparams.device))
     _, val_accs = train_eval_iter(model, training_loader, validation_loader, summary_writer, hparams)
     all_vals.append(np.array(val_accs))
 
@@ -64,8 +64,6 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
     model.train()
 
     for batch_idx, graph_data in enumerate(train_dataset):
-
-      model.train()
 
       begin_time = time.time()
       optimizer.zero_grad()
