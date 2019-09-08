@@ -1,0 +1,9 @@
+device: TODO
+datadir: TODO
+dataname: TODO
+fold_num: TODO
+max_num_nodes: TODO
+channel_list: TODO
+node_list: TODO
+node_hidden_list: TODO
+batch_size: TODO
