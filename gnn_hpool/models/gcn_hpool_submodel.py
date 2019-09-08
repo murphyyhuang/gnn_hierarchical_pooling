@@ -22,9 +22,9 @@ class GcnHpoolSubmodel(Module):
   def reset_parameters(self):
     for m in self.modules():
       if isinstance(m, gcn_layer.GraphConvolution):
-        m.weight.data = torch.nn.init.xavier_uniform(m.weight.data, gain=torch.nn.init.calculate_gain('relu'))
+        m.weight.data = torch.nn.init.xavier_uniform_(m.weight.data, gain=torch.nn.init.calculate_gain('relu'))
         if m.bias is not None:
-          m.bias.data = torch.nn.init.constant(m.bias.data, 0.0)
+          m.bias.data = torch.nn.init.constant_(m.bias.data, 0.0)
 
   def build_graph(self, in_feature, hidden_feature, out_feature, in_node, hidden_node, out_node):
 
@@ -77,7 +77,7 @@ class GcnHpoolSubmodel(Module):
     if embedding_mask is not None:
       pooling_tensor = pooling_tensor * embedding_mask
 
-    x_pool, adj_pool = dense_diff_pool(embedding_tensor, adj, pooling_tensor)
+    x_pool, adj_pool, _, _ = dense_diff_pool(embedding_tensor, adj, pooling_tensor)
 
     embedding_tensor = self.gcn_forward(
       x_pool, adj_pool,
@@ -100,7 +100,7 @@ class GcnHpoolSubmodel(Module):
     layer_out_2 = self.apply_bn(layer_out_2)
     out_all.append(layer_out_2)
 
-    layer_out_3 = F.relu(conv_last(layer_out_2, adj))
+    layer_out_3 = conv_last(layer_out_2, adj)
     out_all.append(layer_out_3)
     out_all = torch.cat(out_all, dim=2)
     if embedding_mask is not None:
@@ -112,4 +112,4 @@ class GcnHpoolSubmodel(Module):
       ''' Batch normalization of 3D tensor x
       '''
       bn_module = torch.nn.BatchNorm1d(x.size()[1])
-      return bn_module(x)
+      return bn_module(x).to(self._device)

@@ -2,6 +2,7 @@
 
 import os
 import time
+import logging
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,20 +14,35 @@ from gnn_hpool.utils import get_loss
 from gnn_hpool.utils import common_utils
 from gnn_hpool.utils.global_variables import *
 from gnn_hpool.utils.evaluate import evaluate
+from gnn_hpool.utils import load_data
+from gnn_hpool.models import gcn_hpool_encoder
 
 
-def train_eval():
-  pass
+def train_eval(hparams):
+  data_loader = load_data.GraphDataLoaderWrapper(hparams)
+
+  all_vals = []
+  for val_idx in range(hparams.fold_num):
+    logging.warning('* validation index: {}'.format(val_idx))
+    training_loader, validation_loader = data_loader.get_loader(val_idx)
+    summary_writer = tensorboardX.SummaryWriter(
+      logdir=os.path.join(hparams.model_save_path, str(hparams.timestamp) + '/val_{}'.format(val_idx))
+    )
+
+    model = gcn_hpool_encoder.GcnHpoolEncoder(hparams)
+    _, val_accs = train_eval_iter(model, training_loader, validation_loader, summary_writer, hparams)
+    all_vals.append(np.array(val_accs))
+
+  all_vals = np.vstack(all_vals)
+  all_vals = np.mean(all_vals, axis=0)
+  logging.warning('* all of the validation results: ', all_vals)
+  logging.warning('* the best validation results & its id: {} @ {}'.format(p.max(all_vals), np.argmax(all_vals)))
 
 
 def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
   optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=hparams.learning_rate)
 
   best_val_result = {
-    'epoch': 0,
-    'loss': 0,
-    'acc': 0}
-  test_result = {
     'epoch': 0,
     'loss': 0,
     'acc': 0}
@@ -42,14 +58,17 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
     model.train()
 
     for batch_idx, graph_data in enumerate(train_dataset):
+
+      model.train()
+
       begin_time = time.time()
-      model.zero_grad()
+      optimizer.zero_grad()
 
       # run model
       ypred = model(graph_data)
       loss = get_loss.cross_entropy(ypred, graph_data[g_key.y])
       loss.backward()
-      torch.nn.utils.clip_grad_norm(model.parameters(), hparams.clip)
+      torch.nn.utils.clip_grad_norm_(model.parameters(), hparams.grad_clip)
       optimizer.step()
 
       # record
@@ -59,8 +78,8 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
 
       # log once per XX epochs
       if epoch % 10 == 0 and batch_idx == len(train_dataset) // 2 and writer is not None:
-        log_assignment(model.assign_tensor, writer, epoch, writer_batch_idx)
-        log_graph(graph_data[g_key.adj_mat], graph_data[g_key.node_num], writer, epoch, writer_batch_idx, model.assign_tensor)
+        log_assignment(model.gcn_hpool_layer.pool_tensor, writer, epoch, writer_batch_idx)
+        log_graph(graph_data[g_key.adj_mat], graph_data[g_key.node_num], writer, epoch, writer_batch_idx, model.gcn_hpool_layer.pool_tensor)
 
     avg_loss /= batch_idx + 1
     if writer is not None:
@@ -70,9 +89,8 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
     train_accs.append(result['acc'])
     train_epochs.append(epoch)
 
-    if eval_dataset is not None:
-      val_result = evaluate(eval_dataset, model, hparams)
-      val_accs.append(val_result['acc'])
+    val_result = evaluate(eval_dataset, model, hparams)
+    val_accs.append(val_result['acc'])
     if val_result['acc'] > best_val_result['acc'] - 1e-7:
       best_val_result['acc'] = val_result['acc']
       best_val_result['epoch'] = epoch
@@ -82,22 +100,22 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
       writer.add_scalar('acc/val_acc', val_result['acc'], epoch)
       writer.add_scalar('loss/best_val_loss', best_val_result['loss'], epoch)
 
-    print('Best val result: ', best_val_result)
+    logging.warning('Best val result: {:.4f} @ epoch {}'.format(best_val_result['acc'], best_val_result['epoch']))
     best_val_epochs.append(best_val_result['epoch'])
     best_val_accs.append(best_val_result['acc'])
 
-    matplotlib.style.use('seaborn')
-    plt.switch_backend('agg')
-    plt.figure()
-    plt.plot(train_epochs, common_utils.exp_moving_avg(train_accs, 0.85), '-', lw=1)
+  matplotlib.style.use('seaborn')
+  plt.switch_backend('agg')
+  plt.figure()
+  plt.plot(train_epochs, common_utils.exp_moving_avg(train_accs, 0.85), '-', lw=1)
 
-    plt.plot(best_val_epochs, best_val_accs, 'bo')
-    plt.legend(['train', 'val'])
-    plt.savefig(os.path.join(hparams.model_save_path, str(hparams) + '.png'), dpi=600)
-    plt.close()
-    matplotlib.style.use('default')
+  plt.plot(best_val_epochs, best_val_accs, 'bo')
+  plt.legend(['train', 'val'])
+  plt.savefig(os.path.join(hparams.model_save_path, str(hparams.timestamp) + '.png'), dpi=600)
+  plt.close()
+  matplotlib.style.use('default')
 
-    return model, val_accs
+  return model, val_accs
 
 
 def log_assignment(assign_tensor, writer, epoch, batch_idx):

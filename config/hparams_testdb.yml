@@ -1,0 +1,14 @@
+device: 'cpu'
+cuda_visible_devices: None
+datadir: 'data/gnn_enzymes_source_20190905'
+model_save_path: 'results'
+dataname: 'ENZYMES'
+fold_num: 10
+max_num_nodes: 1000
+channel_list: [3, 30, 30, 30, 30]
+node_list: [3, 10, 10]
+batch_size: 20
+epoch: 1000
+timestamp: 1567969359
+learning_rate: 0.001
+grad_clip: 2

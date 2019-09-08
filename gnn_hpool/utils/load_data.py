@@ -25,7 +25,7 @@ class GraphDataset(Dataset):
     self._hparams = hparams_lib.copy_hparams(hparams)
     self._device = torch.device(self._hparams.device)
     self.graph_list = []
-    self.preprocess_graph(graph_list)
+    self.processed_graph_list = self.preprocess_graph(graph_list)
 
   def preprocess_graph(self, graph_list):
     processed_graph_list = []
@@ -43,14 +43,22 @@ class GraphDataset(Dataset):
         # change the key here if the real features of node is wanted
         node_tmp_feature[index, :] = graph.node[index]['label']
 
-      graph_tmp_dict[g_key.adj_mat] = torch.tensor(adj, dtype=torch.float32).to(self._device)
+      num_nodes = adj.shape[0]
       graph_tmp_dict[g_key.x] = torch.tensor(node_tmp_feature, dtype=torch.float32).to(self._device)
-      graph_tmp_dict[g_key.y] = torch.tensor(graph.graph['label'], dtype=torch.float32).to(self._device)
-      graph_tmp_dict[g_key.node_num] = torch.tensor(adj.shape[0], dtype=torch.float32).to(self._device)
+      graph_tmp_dict[g_key.y] = torch.tensor(graph.graph['label'], dtype=torch.long).to(self._device)
+      graph_tmp_dict[g_key.node_num] = torch.tensor(num_nodes, dtype=torch.int16).to(self._device)
+      graph_tmp_dict[g_key.adj_mat] = torch.zeros(self._hparams.max_num_nodes, self._hparams.max_num_nodes).to(self._device)
+      graph_tmp_dict[g_key.adj_mat][:num_nodes, :num_nodes] = torch.tensor(adj, dtype=torch.float32).to(self._device)
 
       processed_graph_list.append(graph_tmp_dict)
 
     return processed_graph_list
+
+  def __len__(self):
+    return len(self.processed_graph_list)
+
+  def __getitem__(self, idx):
+    return self.processed_graph_list[idx]
 
 
 class GraphDataLoaderWrapper(object):
@@ -62,7 +70,7 @@ class GraphDataLoaderWrapper(object):
     self.graph_count = len(self.graph_nx)
     self.val_size = self.graph_count // self._hparams.fold_num
 
-  def get_next(self, val_idx):
+  def get_loader(self, val_idx):
     graph_tmp = self.graph_nx
     random.shuffle(graph_tmp)
 
@@ -71,7 +79,7 @@ class GraphDataLoaderWrapper(object):
         train_graphs = train_graphs + graph_tmp[(val_idx+1) * self.val_size:]
     val_graphs = graph_tmp[val_idx * self.val_size: (val_idx + 1) * self.val_size]
 
-    logging.info('* the length of training sets is {}; \n* the length of validation sets is {}'
+    logging.info('\n * the length of training sets is {}; \n * the length of validation sets is {}'
                  .format(len(train_graphs), len(val_graphs)))
 
     training_set = GraphDataset(self._hparams, train_graphs)
