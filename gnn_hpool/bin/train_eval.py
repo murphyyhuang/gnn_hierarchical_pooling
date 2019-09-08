@@ -4,7 +4,13 @@ import os
 import time
 import logging
 import matplotlib
-import matplotlib.pyplot as plt
+
+try:
+  import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+  matplotlib.use('Agg')
+  import matplotlib.pyplot as plt
+
 import numpy as np
 import networkx as nx
 
