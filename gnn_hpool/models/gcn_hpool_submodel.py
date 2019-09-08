@@ -17,6 +17,7 @@ class GcnHpoolSubmodel(Module):
     self.build_graph(in_feature, hidden_feature, out_feature, in_node, hidden_node, out_node)
     self.reset_parameters()
 
+    self._device = torch.device(self._hparams.device)
     self.pool_tensor = None
 
   def reset_parameters(self):

@@ -19,6 +19,8 @@ class GcnHpoolEncoder(Module):
     self.build_graph()
     self.reset_parameters()
 
+    self._device = torch.device(self._hparams.device)
+
   def reset_parameters(self):
     for m in self.modules():
       if isinstance(m, gcn_layer.GraphConvolution):
