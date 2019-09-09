@@ -3,7 +3,7 @@ cuda_visible_devices: '2'
 datadir: 'data/gnn_enzymes_source_20190905'
 model_save_path: 'results'
 dataname: 'ENZYMES'
-fold_num: 3
+fold_num: 10
 max_num_nodes: 1000
 channel_list: [3, 30, 30, 30, 30]
 node_list: [3, 10, 10]

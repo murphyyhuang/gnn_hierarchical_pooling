@@ -41,7 +41,7 @@ def train_eval(hparams):
 
   all_vals = np.vstack(all_vals)
   all_vals = np.mean(all_vals, axis=0)
-  logging.warning('* all of the validation results: ', all_vals)
+  logging.warning('* all of the validation results: '.format(all_vals))
   logging.warning('* the best validation results & its id: {} @ {}'.format(np.max(all_vals), np.argmax(all_vals)))
 
 
