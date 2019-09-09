@@ -59,6 +59,10 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
   val_accs = []
 
   for epoch in range(hparams.epoch):
+
+    if not epoch % 100:
+      logging.info('* Start the {}_th epoch'.format(epoch))
+
     total_time = 0
     avg_loss = 0.0
     model.train()
@@ -99,12 +103,13 @@ def train_eval_iter(model, train_dataset, eval_dataset, writer, hparams):
       best_val_result['acc'] = val_result['acc']
       best_val_result['epoch'] = epoch
       best_val_result['loss'] = avg_loss
+
+      logging.warning('Best val result: {:.4f} @ epoch {}'.format(best_val_result['acc'], best_val_result['epoch']))
     if writer is not None:
       writer.add_scalar('acc/train_acc', result['acc'], epoch)
       writer.add_scalar('acc/val_acc', val_result['acc'], epoch)
       writer.add_scalar('loss/best_val_loss', best_val_result['loss'], epoch)
 
-    logging.warning('Best val result: {:.4f} @ epoch {}'.format(best_val_result['acc'], best_val_result['epoch']))
     best_val_epochs.append(best_val_result['epoch'])
     best_val_accs.append(best_val_result['acc'])
 
