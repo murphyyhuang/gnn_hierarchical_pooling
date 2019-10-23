@@ -1,4 +1,4 @@
-# gnn_hierarchical_pooling
+# Hierarchical Graph Representation Learning
 
 # Requirements
 * Python==3.6.x
