@@ -34,4 +34,5 @@ Best val result: 0.6133 @ epoch 765
 
 # Reference
 [1] Ying, Zhitao, et al. "Hierarchical graph representation learning with differentiable pooling." Advances in Neural Information Processing Systems. 2018.
+
 [2] Huang, Gao, et al. "Densely connected convolutional networks." Proceedings of the IEEE conference on computer vision and pattern recognition. 2017.
